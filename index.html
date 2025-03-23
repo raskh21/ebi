@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تقویم کاری جلالی</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(to right, #ff9a9e, #fad0c4);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            direction: rtl;
+            transition: background 0.5s;
+        }
+        .calendar-container {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #ff6f61;
+            color: white;
+            padding: 10px;
+            border-radius: 10px;
+        }
+        .calendar-header h2 {
+            margin: 0;
+        }
+        button {
+            background: white;
+            border: none;
+            padding: 10px 15px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+            margin: 5px;
+            transition: background 0.3s, transform 0.3s, color 0.3s;
+        }
+        button.edit {
+            background-color: #4caf50;
+        }
+        button.delete {
+            background-color: #f44336;
+        }
+        button.done {
+            background-color: #2196f3;
+        }
+        button.close {
+            background-color: #ff9800;
+        }
+        button.holiday {
+            background-color: #ffeb3b;
+        }
+        button.show-notes {
+            background-color: #00ffff; /* آبی روشن (اجری) */
+        }
+        button:hover {
+            background: #ddd;
+            transform: scale(1.05);
+        }
+        .calendar-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        .friday {
+            background: #ff6f61;
+            color: white;
+        }
+        .holiday {
+            background: yellow;
+        }
+        .has-note {
+            background: #00ffff; /* آبی روشن (اجری) */
+            color: white;
+        }
+        .current-day {
+            background: #4caf50; /* سبز */
+            color: white;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+            padding: 20px;
+            z-index: 1000;
+        }
+        .calendar-table th, .calendar-table td {
+            width: 14%;
+            height: 50px;
+            padding: 10px;
+            text-align: center;
+            vertical-align: middle;
+            border: 1px solid #ddd;
+            box-sizing: border-box;
+        }
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 500;
+        }
+        .modal textarea {
+            width: 100%;
+            resize: none;
+        }
+        table#notesTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        table#notesTable.show {
+            opacity: 1;
+        }
+        table#notesTable th, table#notesTable td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
+        .buttons-row {
+            margin-top: 10px;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+        .buttons-row.show {
+            opacity: 1;
+        }
+        .full-width-button {
+            width: 100%;
+            padding: 15px;
+            font-size: 18px;
+        }
+        .half-width-button {
+            width: 48%;
+            padding: 15px;
+            font-size: 16px;
+        }
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .selected-row {
+            background-color: #f0f0f0;
+        }
+        @media (max-width: 768px) {
+            .calendar-container {
+                width: 95%;
+            }
+            button {
+                width: 100%;
+                margin: 5px 0;
+            }
+            .button-container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>تقویم کاری هجری شمسی RASEKH.AI</h1>
+    </header>
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <button id="nextMonth" onclick="changeMonth(-1)"><i class="fas fa-chevron-right"></i></button>
+            <h2 id="monthName"></h2>
+            <button id="prevMonth" onclick="changeMonth(1)"><i class="fas fa-chevron-left"></i></button>
+        </div>
+        <table class="calendar-table">
+            <thead>
+                <tr>
+                    <th>شنبه</th>
+                    <th>یک‌شنبه</th>
+                    <th>دوشنبه</th>
+                    <th>سه‌شنبه</th>
+                    <th>چهارشنبه</th>
+                    <th>پنج‌شنبه</th>
+                    <th>جمعه</th>
+                </tr>
+            </thead>
+            <tbody id="calendarBody"></tbody>
+        </table>
+    </div>
+    <div class="button-container">
+        <button class="half-width-button show-notes" onclick="toggleNotesTable()"><i class="fas fa-sticky-note"></i> نمایش یادداشت‌ها</button>
+        <button class="half-width-button holiday" onclick="manageHolidays()"><i class="fas fa-calendar-alt"></i> مدیریت تعطیلات</button>
+    </div>
+    <div id="noteModal" class="modal">
+        <h3>اضافه کردن یادداشت</h3>
+        <textarea id="noteInput" rows="10" placeholder="متن یادداشت خود را اینجا وارد کنید..."></textarea>
+        <br />
+        <button onclick="saveNote()"><i class="fas fa-save"></i> ذخیره</button>
+        <button onclick="closeNoteModal()"><i class="fas fa-times"></i> لغو</button>
+    </div>
+    <div id="holidayModal" class="modal">
+        <h3>مدیریت تعطیلات</h3>
+        <textarea id="holidayInput" rows="6" placeholder="روزهای تعطیل را با کاما جدا کنید (مثلا: 1, 12, 13)"></textarea>
+        <br />
+        <button onclick="saveHolidays()"><i class="fas fa-save"></i> ذخیره</button>
+        <button onclick="closeHolidayModal()"><i class="fas fa-times"></i> لغو</button>
+    </div>
+    <div id="overlay" class="overlay" onclick="closeNoteModal()"></div>
+    <table id="notesTable">
+        <thead>
+            <tr>
+                <th>روز</th>
+                <th>شرح</th>
+                <th>ارجاع</th>
+                <th>نتیجه</th>
+            </tr>
+        </thead>
+        <tbody id="notesTableBody"></tbody>
+    </table>
+    <div class="buttons-row" id="notesButtons">
+        <button class="edit" onclick="editSelectedNote()"><i class="fas fa-edit"></i> ویرایش</button>
+        <button class="delete" onclick="deleteSelectedNote()"><i class="fas fa-trash"></i> حذف</button>
+        <button class="done" onclick="markAsDone()"><i class="fas fa-check"></i> انجام شد</button>
+        <button class="close" onclick="closeNotesTable()"><i class="fas fa-window-close"></i> بستن</button>
+    </div>
+    <script>
+        const months = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
+        const daysInMonth = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
+        let currentMonth = 0;
+        let currentYear = 1404;
+        let holidays = JSON.parse(localStorage.getItem('holidays')) || {"فروردین": [1, 12, 13], "اردیبهشت": [14], "خرداد": [14, 15], "تیر": [], "مرداد": [], "شهریور": [], "مهر": [], "آبان": [], "آذر": [], "دی": [], "بهمن": [], "اسفند": []};
+
+        let notes = JSON.parse(localStorage.getItem('notes')) || {};
+        let selectedRow = null;
+        let currentDay = null;
+
+        // تابع محاسبه روز شروع ماه
+        function getFirstDayOfMonth(year, month) {
+            // این تابع روز هفته شروع هر ماه را محاسبه می‌کند
+            // برای سال 1404 شمسی
+            const firstDayOfYearMap = {
+                1404: 6  // 1404 شمسی با جمعه شروع می‌شود (شنبه=0، یکشنبه=1، ... جمعه=6)
+            };
+
+            // محاسبه تعداد روزهای گذشته از ابتدای سال تا ابتدای ماه مورد نظر
+            let totalDays = 0;
+            for (let i = 0; i < month; i++) {
+                totalDays += daysInMonth[i];
+            }
+
+            // محاسبه روز هفته با توجه به روز شروع سال
+            return (firstDayOfYearMap[year] + totalDays) % 7;
+        }
+
+        function renderCalendar() {
+            document.getElementById("monthName").innerText = months[currentMonth] + " " + currentYear;
+            const tbody = document.getElementById("calendarBody");
+            tbody.innerHTML = "";
+
+            // محاسبه روز شروع ماه
+            let startDay = getFirstDayOfMonth(currentYear, currentMonth);
+
+            // محاسبه تعداد روزهای ماه
+            let dayCount = daysInMonth[currentMonth];
+
+            let row = document.createElement("tr");
+
+            // ایجاد سلول‌های خالی برای روزهای قبل از شروع ماه
+            for (let i = 0; i < startDay; i++) {
+                let emptyCell = document.createElement("td");
+                row.appendChild(emptyCell);
+            }
+
+            // ایجاد سلول‌های روزهای ماه
+            for (let i = 1; i <= dayCount; i++) {
+                let cell = document.createElement("td");
+                cell.innerText = i;
+
+                // افزودن کلاس به روزهای تعطیل
+                if (holidays[months[currentMonth]].includes(i)) {
+                    cell.classList.add("holiday");
+                }
+
+                // افزودن کلاس به روزهای جمعه
+                if ((i + startDay - 1) % 7 === 6) {
+                    cell.classList.add("friday");
+                }
+
+                // افزودن کلاس به سلول‌های با یادداشت
+                if (notes[currentYear] && notes[currentYear][currentMonth] && notes[currentYear][currentMonth][i]) {
+                    cell.classList.add("has-note");
+                }
+
+                // افزودن کلاس به روز جاری
+                const today = new Date();
+                const jalaliDate = convertToJalali(today);
+                if (jalaliDate.year === currentYear && jalaliDate.month === currentMonth && jalaliDate.day === i) {
+                    cell.classList.add("current-day");
+                }
+
+                cell.ondblclick = () => openNoteModal(i);
+                row.appendChild(cell);
+
+                // شروع سطر جدید بعد از ۷ روز یا در پایان ماه
+                if ((i + startDay) % 7 === 0 || i === dayCount) {
+                    tbody.appendChild(row);
+                    if (i !== dayCount) {
+                        row = document.createElement("tr");
+                    }
+                }
+            }
+        }
+
+        function changeMonth(step) {
+            currentMonth += step;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            } else if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar();
+            renderNotes(); // هنگام تغییر ماه، یادداشت‌ها را نیز به‌روزرسانی می‌کنیم
+        }
+
+        function openNoteModal(day) {
+            currentDay = day;
+            const note = notes[currentYear] && notes[currentYear][currentMonth] && notes[currentYear][currentMonth][day] ? notes[currentYear][currentMonth][day].description : "";
+            document.getElementById("noteInput").value = note;
+            document.getElementById("noteModal").style.display = "block";
+            document.getElementById("overlay").style.display = "block";
+        }
+
+        function closeNoteModal() {
+            document.getElementById("noteModal").style.display = "none";
+            document.getElementById("overlay").style.display = "none";
+        }
+
+        function saveNote() {
+            const note = document.getElementById("noteInput").value.trim();
+            if (note) {
+                if (!notes[currentYear]) {
+                    notes[currentYear] = {};
+                }
+                if (!notes[currentYear][currentMonth]) {
+                    notes[currentYear][currentMonth] = {};
+                }
+                notes[currentYear][currentMonth][currentDay] = {
+                    description: note,
+                    reference: "",
+                    result: "",
+                    done: false
+                };
+                localStorage.setItem('notes', JSON.stringify(notes));
+                updateCalendar();
+                renderNotes();
+            }
+            closeNoteModal();
+        }
+
+        function updateCalendar() {
+            const cells = document.querySelectorAll(".calendar-table td");
+            cells.forEach(cell => {
+                const day = parseInt(cell.innerText);
+                if (!isNaN(day) && notes[currentYear] && notes[currentYear][currentMonth] && notes[currentYear][currentMonth][day]) {
+                    cell.classList.add("has-note");
+                } else if (!isNaN(day)) {
+                    cell.classList.remove("has-note");
+                }
+            });
+        }
+
+        function renderNotes() {
+            const notesTableBody = document.getElementById("notesTableBody");
+            notesTableBody.innerHTML = "";
+            if (notes[currentYear] && notes[currentYear][currentMonth]) {
+                const sortedDays = Object.keys(notes[currentYear][currentMonth]).sort((a, b) => a - b);
+                sortedDays.forEach(day => {
+                    const note = notes[currentYear][currentMonth][day];
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${day}</td>
+                        <td>${note.description}</td>
+                        <td contenteditable="true" onBlur="updateNote(${day}, 'reference', this)">${note.reference}</td>
+                        <td contenteditable="true" onBlur="updateNote(${day}, 'result', this)">${note.result}</td>
+                    `;
+                    row.addEventListener('click', () => selectRow(row, day));
+                    notesTableBody.appendChild(row);
+                });
+            }
+        }
+
+        function updateNote(day, field, element) {
+            notes[currentYear][currentMonth][day][field] = element.innerText.trim();
+            localStorage.setItem('notes', JSON.stringify(notes));
+        }
+
+        function selectRow(row, day) {
+            if (selectedRow) {
+                selectedRow.classList.remove('selected-row');
+            }
+            selectedRow = row;
+            selectedRow.classList.add('selected-row');
+            currentDay = day;
+        }
+
+        function editSelectedNote() {
+            if (selectedRow && !notes[currentYear][currentMonth][currentDay].done) {
+                openNoteModal(currentDay);
+            }
+        }
+
+        function deleteSelectedNote() {
+            if (selectedRow && !notes[currentYear][currentMonth][currentDay].done) {
+                delete notes[currentYear][currentMonth][currentDay];
+                localStorage.setItem('notes', JSON.stringify(notes));
+                updateCalendar();
+                renderNotes();
+            }
+        }
+
+        function markAsDone() {
+            if (selectedRow && !notes[currentYear][currentMonth][currentDay].done) {
+                notes[currentYear][currentMonth][currentDay].done = true;
+                localStorage.setItem('notes', JSON.stringify(notes));
+                selectedRow.classList.add('done');
+                selectedRow = null;
+            }
+        }
+
+        function toggleNotesTable() {
+            const notesTable = document.getElementById("notesTable");
+            const notesButtons = document.getElementById("notesButtons");
+            const calendarContainer = document.querySelector(".calendar-container");
+            if (notesTable.classList.contains('show')) {
+                notesTable.classList.remove('show');
+                notesButtons.classList.remove('show');
+                calendarContainer.style.display = "block";
+                setTimeout(() => {
+                    calendarContainer.style.opacity = 1;
+                }, 100);
+            } else {
+                notesTable.classList.add('show');
+                notesButtons.classList.add('show');
+                calendarContainer.style.opacity = 0;
+                setTimeout(() => {
+                    calendarContainer.style.display = "none";
+                }, 300);
+            }
+        }
+
+        function closeNotesTable() {
+            const notesTable = document.getElementById("notesTable");
+            const notesButtons = document.getElementById("notesButtons");
+            const calendarContainer = document.querySelector(".calendar-container");
+            notesTable.classList.remove('show');
+            notesButtons.classList.remove('show');
+            calendarContainer.style.display = "block";
+            setTimeout(() => {
+                calendarContainer.style.opacity = 1;
+            }, 100);
+        }
+
+        function manageHolidays() {
+            const holidayInput = document.getElementById("holidayInput");
+            holidayInput.value = holidays[months[currentMonth]].join(", ");
+            document.getElementById("holidayModal").style.display = "block";
+            document.getElementById("overlay").style.display = "block";
+        }
+
+        function closeHolidayModal() {
+            document.getElementById("holidayModal").style.display = "none";
+            document.getElementById("overlay").style.display = "none";
+        }
+
+        function saveHolidays() {
+            const holidayInput = document.getElementById("holidayInput").value.trim();
+            if (holidayInput) {
+                holidays[months[currentMonth]] = holidayInput.split(",").map(day => parseInt(day.trim()));
+                localStorage.setItem('holidays', JSON.stringify(holidays));
+                renderCalendar();
+            }
+            closeHolidayModal();
+        }
+
+        // تبدیل تاریخ میلادی به شمسی
+        function convertToJalali(date) {
+            const jalaliDate = {};
+            const year = date.getFullYear();
+            const month = date.getMonth();
+            const day = date.getDate();
+
+            // این تبدیل برای سال 1404 شمسی است
+            if (year === 2025 && month === 2 && day >= 21) {
+                jalaliDate.year = 1404;
+                jalaliDate.month = 0;
+                jalaliDate.day = day - 20;
+            } else if (year === 2025 && month === 3) {
+                jalaliDate.year = 1404;
+                jalaliDate.month = 1;
+                jalaliDate.day = day + 10;
+            }
+
+            return jalaliDate;
+        }
+
+        // هنگام بارگذاری صفحه
+        renderCalendar();
+        renderNotes();
+    </script>
+</body>
+</html>
