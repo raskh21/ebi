@@ -15,6 +15,7 @@
             flex-direction: column;
             direction: rtl;
             transition: background 0.5s;
+            margin: 0;
         }
         .calendar-container {
             background: white;
@@ -64,7 +65,7 @@
             background-color: #ffeb3b;
         }
         button.show-notes {
-            background-color: #00ffff; /* آبی روشن (اجری) */
+            background-color: #00ffff;
         }
         button:hover {
             background: #ddd;
@@ -83,11 +84,11 @@
             background: yellow;
         }
         .has-note {
-            background: #00ffff; /* آبی روشن (اجری) */
+            background: #00ffff;
             color: white;
         }
         .current-day {
-            background: #4caf50; /* سبز */
+            background: #4caf50;
             color: white;
         }
         .modal {
@@ -253,21 +254,14 @@
         let selectedRow = null;
         let currentDay = null;
 
-        // تابع محاسبه روز شروع ماه
         function getFirstDayOfMonth(year, month) {
-            // این تابع روز هفته شروع هر ماه را محاسبه می‌کند
-            // برای سال 1404 شمسی
             const firstDayOfYearMap = {
-                1404: 6  // 1404 شمسی با جمعه شروع می‌شود (شنبه=0، یکشنبه=1، ... جمعه=6)
+                1404: 6
             };
-
-            // محاسبه تعداد روزهای گذشته از ابتدای سال تا ابتدای ماه مورد نظر
             let totalDays = 0;
             for (let i = 0; i < month; i++) {
                 totalDays += daysInMonth[i];
             }
-
-            // محاسبه روز هفته با توجه به روز شروع سال
             return (firstDayOfYearMap[year] + totalDays) % 7;
         }
 
@@ -276,41 +270,31 @@
             const tbody = document.getElementById("calendarBody");
             tbody.innerHTML = "";
 
-            // محاسبه روز شروع ماه
             let startDay = getFirstDayOfMonth(currentYear, currentMonth);
-
-            // محاسبه تعداد روزهای ماه
             let dayCount = daysInMonth[currentMonth];
-
             let row = document.createElement("tr");
 
-            // ایجاد سلول‌های خالی برای روزهای قبل از شروع ماه
             for (let i = 0; i < startDay; i++) {
                 let emptyCell = document.createElement("td");
                 row.appendChild(emptyCell);
             }
 
-            // ایجاد سلول‌های روزهای ماه
             for (let i = 1; i <= dayCount; i++) {
                 let cell = document.createElement("td");
                 cell.innerText = i;
 
-                // افزودن کلاس به روزهای تعطیل
                 if (holidays[months[currentMonth]].includes(i)) {
                     cell.classList.add("holiday");
                 }
 
-                // افزودن کلاس به روزهای جمعه
                 if ((i + startDay - 1) % 7 === 6) {
                     cell.classList.add("friday");
                 }
 
-                // افزودن کلاس به سلول‌های با یادداشت
                 if (notes[currentYear] && notes[currentYear][currentMonth] && notes[currentYear][currentMonth][i]) {
                     cell.classList.add("has-note");
                 }
 
-                // افزودن کلاس به روز جاری
                 const today = new Date();
                 const jalaliDate = convertToJalali(today);
                 if (jalaliDate.year === currentYear && jalaliDate.month === currentMonth && jalaliDate.day === i) {
@@ -320,7 +304,6 @@
                 cell.ondblclick = () => openNoteModal(i);
                 row.appendChild(cell);
 
-                // شروع سطر جدید بعد از ۷ روز یا در پایان ماه
                 if ((i + startDay) % 7 === 0 || i === dayCount) {
                     tbody.appendChild(row);
                     if (i !== dayCount) {
@@ -340,7 +323,7 @@
                 currentYear++;
             }
             renderCalendar();
-            renderNotes(); // هنگام تغییر ماه، یادداشت‌ها را نیز به‌روزرسانی می‌کنیم
+            renderNotes();
         }
 
         function openNoteModal(day) {
@@ -503,14 +486,12 @@
             closeHolidayModal();
         }
 
-        // تبدیل تاریخ میلادی به شمسی
         function convertToJalali(date) {
             const jalaliDate = {};
             const year = date.getFullYear();
             const month = date.getMonth();
             const day = date.getDate();
 
-            // این تبدیل برای سال 1404 شمسی است
             if (year === 2025 && month === 2 && day >= 21) {
                 jalaliDate.year = 1404;
                 jalaliDate.month = 0;
@@ -524,7 +505,6 @@
             return jalaliDate;
         }
 
-        // هنگام بارگذاری صفحه
         renderCalendar();
         renderNotes();
     </script>
