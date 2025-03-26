@@ -6,7 +6,7 @@
     <title>تقویم کاری جلالی</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        body {
+ body {
             font-family: 'Arial', sans-serif;
             background: linear-gradient(to right, #ff9a9e, #fad0c4);
             display: flex;
@@ -16,17 +16,34 @@
             direction: rtl;
             transition: background 0.5s;
             margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+          }
+	    header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #333;
         }
-        .calendar-container {
+		header h1 {
+            margin: 0;
+            font-size: 2em;
+        }
+        header h3 {
+            margin: 10px 0;
+            color: #666;
+        }
+		.calendar-container, .button-container, table#notesTable {
             background: white;
             border-radius: 15px;
             padding: 20px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             text-align: center;
-            width: 90%;
+            width: 100%;
             max-width: 600px;
             transition: transform 0.3s, opacity 0.3s;
+            margin: 20px auto;
         }
+		 
         .calendar-header {
             display: flex;
             justify-content: space-between;
@@ -65,7 +82,7 @@
             background-color: #ffeb3b;
         }
         button.show-notes {
-            background-color: #00ffff;
+            background-color: #00ffff; /* آبی روشن (اجری) */
         }
         button:hover {
             background: #ddd;
@@ -84,11 +101,11 @@
             background: yellow;
         }
         .has-note {
-            background: #00ffff;
+            background: #00ffff; /* آبی روشن (اجری) */
             color: white;
         }
         .current-day {
-            background: #4caf50;
+            background: #4caf50; /* سبز */
             color: white;
         }
         .modal {
@@ -145,6 +162,8 @@
             margin-top: 10px;
             opacity: 0;
             transition: opacity 0.5s;
+            display: flex;
+            justify-content: flex-end; /* Align buttons to the right */
         }
         .buttons-row.show {
             opacity: 1;
@@ -156,8 +175,8 @@
         }
         .half-width-button {
             width: 48%;
-            padding: 15px;
-            font-size: 16px;
+            padding: 10px;
+            font-size: 14px;
         }
         .button-container {
             display: flex;
@@ -178,13 +197,52 @@
             .button-container {
                 flex-direction: column;
             }
+            .calendar-table th, .calendar-table td {
+                padding: 5px;
+                font-size: 14px;
+            }
+            header h1 {
+                font-size: 1.5em;
+            }
+            header h3 {
+                font-size: 1em;
+            }
+            button {
+                padding: 8px;
+                font-size: 12px;
+            }
+            .modal {
+                width: 90%;
+                max-width: 400px;
+                padding: 15px;
+            }
+            table#notesTable th, table#notesTable td {
+                padding: 5px;
+                font-size: 12px;
+            }
+        }
+        @media (max-width: 480px) {
+            .calendar-table th, .calendar-table td {
+                font-size: 12px;
+            }
+            button {
+                padding: 6px;
+                font-size: 12px;
+            }
+            header h1 {
+                font-size: 1.2em;
+            }
+            header h3 {
+                font-size: 0.9em;
+            }
         }
     </style>
 </head>
 <body>
 <div class="container">
     <header>
-        <h1>تقویم کاری هجری شمسی RASEKH.AI</h1>
+        <h1>تقویم کاری هجری شمسی</h1>
+        <h3>RASEKH.AI</h3>
     </header>
     <div class="calendar-container">
         <div class="calendar-header">
@@ -220,7 +278,7 @@
     </div>
     <div id="holidayModal" class="modal">
         <h3>مدیریت تعطیلات</h3>
-        <textarea id="holidayInput" rows="6" placeholder="روزهای تعطیل را با کاما جدا کنید (مثلا: 1, 12, 13)"></textarea>
+        <textarea id="holidayInput" rows="6" placeholder="روزهای تعطیل را با کاما جدا کنید (مثلا: ۱, ۱۲, ۱۳)"></textarea>
         <br />
         <button onclick="saveHolidays()"><i class="fas fa-save"></i> ذخیره</button>
         <button onclick="closeHolidayModal()"><i class="fas fa-times"></i> لغو</button>
@@ -234,6 +292,7 @@
                 <th>ارجاع</th>
                 <th>نتیجه</th>
             </tr>
+
         </thead>
         <tbody id="notesTableBody"></tbody>
     </table>
@@ -243,7 +302,7 @@
         <button class="done" onclick="markAsDone()"><i class="fas fa-check"></i> انجام شد</button>
         <button class="close" onclick="closeNotesTable()"><i class="fas fa-window-close"></i> بستن</button>
     </div>
-    <script>
+  <script>
         const months = ["فروردین", "اردیبهشت", "خرداد", "تیر", "مرداد", "شهریور", "مهر", "آبان", "آذر", "دی", "بهمن", "اسفند"];
         const daysInMonth = [31, 31, 31, 31, 31, 31, 30, 30, 30, 30, 30, 29];
         let currentMonth = 0;
@@ -254,47 +313,64 @@
         let selectedRow = null;
         let currentDay = null;
 
+        // تابع محاسبه روز شروع ماه
         function getFirstDayOfMonth(year, month) {
+            // این تابع روز هفته شروع هر ماه را محاسبه می‌کند
+            // برای سال 1404 شمسی
             const firstDayOfYearMap = {
-                1404: 6
+                1404: 6  // 1404 شمسی با جمعه شروع می‌شود (شنبه=0، یکشنبه=1، ... جمعه=6)
             };
+
+            // محاسبه تعداد روزهای گذشته از ابتدای سال تا ابتدای ماه مورد نظر
             let totalDays = 0;
             for (let i = 0; i < month; i++) {
                 totalDays += daysInMonth[i];
             }
+
+            // محاسبه روز هفته با توجه به روز شروع سال
             return (firstDayOfYearMap[year] + totalDays) % 7;
         }
 
         function renderCalendar() {
-            document.getElementById("monthName").innerText = months[currentMonth] + " " + currentYear;
+            document.getElementById("monthName").innerText = months[currentMonth] + " " + toPersianNumber(currentYear);
             const tbody = document.getElementById("calendarBody");
             tbody.innerHTML = "";
 
+            // محاسبه روز شروع ماه
             let startDay = getFirstDayOfMonth(currentYear, currentMonth);
+
+            // محاسبه تعداد روزهای ماه
             let dayCount = daysInMonth[currentMonth];
+
             let row = document.createElement("tr");
 
+            // ایجاد سلول‌های خالی برای روزهای قبل از شروع ماه
             for (let i = 0; i < startDay; i++) {
                 let emptyCell = document.createElement("td");
                 row.appendChild(emptyCell);
             }
 
+            // ایجاد سلول‌های روزهای ماه
             for (let i = 1; i <= dayCount; i++) {
                 let cell = document.createElement("td");
-                cell.innerText = i;
+                cell.innerText = toPersianNumber(i);
 
+                // افزودن کلاس به روزهای تعطیل
                 if (holidays[months[currentMonth]].includes(i)) {
                     cell.classList.add("holiday");
                 }
 
+                // افزودن کلاس به روزهای جمعه
                 if ((i + startDay - 1) % 7 === 6) {
                     cell.classList.add("friday");
                 }
 
+                // افزودن کلاس به سلول‌های با یادداشت
                 if (notes[currentYear] && notes[currentYear][currentMonth] && notes[currentYear][currentMonth][i]) {
                     cell.classList.add("has-note");
                 }
 
+                // افزودن کلاس به روز جاری
                 const today = new Date();
                 const jalaliDate = convertToJalali(today);
                 if (jalaliDate.year === currentYear && jalaliDate.month === currentMonth && jalaliDate.day === i) {
@@ -304,6 +380,7 @@
                 cell.ondblclick = () => openNoteModal(i);
                 row.appendChild(cell);
 
+                // شروع سطر جدید بعد از ۷ روز یا در پایان ماه
                 if ((i + startDay) % 7 === 0 || i === dayCount) {
                     tbody.appendChild(row);
                     if (i !== dayCount) {
@@ -323,7 +400,7 @@
                 currentYear++;
             }
             renderCalendar();
-            renderNotes();
+            renderNotes(); // هنگام تغییر ماه، یادداشت‌ها را نیز به‌روزرسانی می‌کنیم
         }
 
         function openNoteModal(day) {
@@ -382,7 +459,7 @@
                     const note = notes[currentYear][currentMonth][day];
                     const row = document.createElement("tr");
                     row.innerHTML = `
-                        <td>${day}</td>
+                        <td>${toPersianNumber(day)}</td>
                         <td>${note.description}</td>
                         <td contenteditable="true" onBlur="updateNote(${day}, 'reference', this)">${note.reference}</td>
                         <td contenteditable="true" onBlur="updateNote(${day}, 'result', this)">${note.result}</td>
@@ -435,10 +512,12 @@
             const notesTable = document.getElementById("notesTable");
             const notesButtons = document.getElementById("notesButtons");
             const calendarContainer = document.querySelector(".calendar-container");
+            const buttonContainer = document.querySelector(".button-container");
             if (notesTable.classList.contains('show')) {
                 notesTable.classList.remove('show');
                 notesButtons.classList.remove('show');
                 calendarContainer.style.display = "block";
+                buttonContainer.style.display = "flex";
                 setTimeout(() => {
                     calendarContainer.style.opacity = 1;
                 }, 100);
@@ -446,6 +525,7 @@
                 notesTable.classList.add('show');
                 notesButtons.classList.add('show');
                 calendarContainer.style.opacity = 0;
+                buttonContainer.style.display = "none";
                 setTimeout(() => {
                     calendarContainer.style.display = "none";
                 }, 300);
@@ -456,8 +536,10 @@
             const notesTable = document.getElementById("notesTable");
             const notesButtons = document.getElementById("notesButtons");
             const calendarContainer = document.querySelector(".calendar-container");
+            const buttonContainer = document.querySelector(".button-container");
             notesTable.classList.remove('show');
             notesButtons.classList.remove('show');
+            buttonContainer.style.display = "flex";
             calendarContainer.style.display = "block";
             setTimeout(() => {
                 calendarContainer.style.opacity = 1;
@@ -486,12 +568,14 @@
             closeHolidayModal();
         }
 
+        // تبدیل تاریخ میلادی به شمسی
         function convertToJalali(date) {
             const jalaliDate = {};
             const year = date.getFullYear();
             const month = date.getMonth();
             const day = date.getDate();
 
+            // این تبدیل برای سال 1404 شمسی است
             if (year === 2025 && month === 2 && day >= 21) {
                 jalaliDate.year = 1404;
                 jalaliDate.month = 0;
@@ -504,9 +588,16 @@
 
             return jalaliDate;
         }
+        // تبدیل اعداد انگلیسی به فارسی
+        function toPersianNumber(num) {
+            const persianNumbers = ["۰", "۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹"];
+            return num.toString().replace(/\d/g, x => persianNumbers[x]);
+        }
 
+        // هنگام بارگذاری صفحه
         renderCalendar();
         renderNotes();
     </script>
+</div>
 </body>
 </html>
